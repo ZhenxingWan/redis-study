@@ -423,7 +423,7 @@ redis-benchmark 是一个压力测试工具！
 redis-benchmark 命令参数！
 
 图片来自菜鸟教程：
-![在这里插入图片描述](D:\2021\redis-study\Redis\img\17.png)
+![](D:\2021\Redis\redis-study\img\17.png)
 
 我们来简单测试下：
 

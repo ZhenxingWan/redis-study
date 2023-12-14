@@ -28,7 +28,7 @@ Data Access Layer（数据访问层）
 
 发展过程： 优化数据结构和索引–> 文件缓存（IO）—> Memcached（分布式缓存）当时最热门的技术！
 
-![](D:\2021\Redis\redis-study\img\1.png)
+![](https://github.com/ZhenxingWan/redis-study/blob/master/img/1.png)
 
 #### 1.1.3、分库分表 + 水平拆分 + MySQL集群
 
@@ -43,7 +43,7 @@ Data Access Layer（数据访问层）
 慢慢的就开始使用分库分表来解决写的压力！ MySQL 在那个年代推出 了表分区！但这个技术并没有多少公司使用！
 
 MySQL 的 集群，很好地满足那个年代的所有需求！
-![](D:\2021\Redis\redis-study\img\2.png)
+![](https://github.com/ZhenxingWan/redis-study/blob/master/img/2.png)
 
 #### 1.1.4、如今最近的年代
 

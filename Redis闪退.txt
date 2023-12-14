@@ -1,0 +1,8 @@
+
+cd /d C:\Program Files\Redis
+C:\Program Files\Redis>redis-server.exe redis.windows.conf
+
+C:\Program Files\Redis>redis-cli.exe
+127.0.0.1:6379> exit
+
+C:\Program Files\Redis>redis-server.exe redis.windows.conf

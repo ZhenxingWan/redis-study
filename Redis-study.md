@@ -1210,34 +1210,32 @@ hash变更的数据 user name age，尤其是是用户信息之类的，经常�
 ##########################################################################
 # 移除rem中的元素
 127.0.0.1:6379> zrange salary 0 -1
-1) "kaungshen"
+1) "xing"
 2) "xiaohong"
 3) "zhangsan"
 127.0.0.1:6379> zrem salary xiaohong # 移除有序集合中的指定元素
 (integer) 1
 127.0.0.1:6379> zrange salary 0 -1
-1) "kaungshen"
+1) "xing"
 2) "zhangsan"
 127.0.0.1:6379> zcard salary # 获取有序集合中的个数
 (integer) 2
 ##########################################################################
+127.0.0.1:6379> flushdb
+OK
 127.0.0.1:6379> zadd myset 1 hello
 (integer) 1
-127.0.0.1:6379> zadd myset 2 world 3 kuangshen
+127.0.0.1:6379> zadd myset 2 world 3 xing
 (integer) 2
 127.0.0.1:6379> zcount myset 1 3 # 获取指定区间的成员数量！
 (integer) 3
 127.0.0.1:6379> zcount myset 1 2
 (integer) 2
 ```
-
-其与的一些API，通过我们的学习吗，你们剩下的如果工作中有需要，这个时候你可以去查查看官方文档！
-
-案例思路：set 排序 存储班级成绩表，工资表排序！
-
-普通消息，1， 重要消息 2，带权重进行判断！
-
-排行榜应用实现，取Top N 测试！
+其与的一些API，通过我们的学习，剩下的如果工作中有需要，这个时候你可以去查查看官方文档！  
+案例思路：set 排序 存储班级成绩表，工资表排序！  
+普通消息，1、重要消息 2、带权重进行判断！  
+做排行榜应用实现，取Top N 测试！
 
 ## 4、三种特殊数据类型
 
@@ -1245,53 +1243,56 @@ hash变更的数据 user name age，尤其是是用户信息之类的，经常�
 
 朋友的定位，附近的人，打车距离计算？
 
-Redis 的 Geo 在Redis3.2 版本就推出了！ 这个功能可以推算地理位置的信息，两地之间的距离，方圆几里的人！
+Redis 的 Geo 在Redis3.2 版本就推出了！这个功能可以推算地理位置的信息，两地之间的距离，方圆几里的人！
 
-可以查询一些测试数据：http://www.jsons.cn/lngcodeinfo/0706D99C19A781A3/
+可以查询一些测试数据：http://www.jsons.cn/lngcode
 
 只有 六个命令：
-
-![image-20221021141037944](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155635780-2115922276.png)
+![](D:\2021\Redis\redis-study\img\23.png)
 
 官方文档：https://www.redis.net.cn/order/3685.html
 
-#### getadd
+#### 4.1.1 getadd
 
 ```shell
 # getadd 添加地理位置
 # 规则：两级无法直接添加，我们一般会下载城市数据，直接通过java程序一次性导入！
 # 有效的经度从-180度到180度。
 # 有效的纬度从-85.05112878度到85.05112878度。
+
 # 当坐标位置超出上述指定范围时，该命令将会返回一个错误。
-# 127.0.0.1:6379> geoadd china:city 39.90 116.40 beijin
-(error) ERR invalid longitude,latitude pair 39.900000,116.400000
+127.0.0.1:6379> geoadd china:city 39.90 116.40 beijin
+(error) ERR invalid longitude,latitude pair 39.900000,116.400000  # 超出有效范围
+
 # 参数 key 值（）
 127.0.0.1:6379> geoadd china:city 116.40 39.90 beijing
 (integer) 1
 127.0.0.1:6379> geoadd china:city 121.47 31.23 shanghai
 (integer) 1
-127.0.0.1:6379> geoadd china:city 106.50 29.53 chongqi 114.05 22.52 shengzhen
+127.0.0.1:6379> geoadd china:city 106.50 29.53 chongqing 114.05 22.52 shengzhen
 (integer) 2
 127.0.0.1:6379> geoadd china:city 120.16 30.24 hangzhou 108.96 34.26 xian
 (integer) 2
+127.0.0.1:6379>
 ```
 
-#### getpos
+#### 4.1.2 getpos
 
 获得当前定位：一定是一个坐标值！
 
 ```shell
-127.0.0.1:6379> GEOPOS china:city beijing # 获取指定的城市的经度和纬度！
+127.0.0.1:6379> geopos china:city beijing # 获取指定的城市的经度和纬度！
 1) 1) "116.39999896287918091"
-2) "39.90000009167092543"
-127.0.0.1:6379> GEOPOS china:city beijing chongqi
+   2) "39.90000009167092543"
+127.0.0.1:6379> geopos china:city beijing chongqing
 1) 1) "116.39999896287918091"
-2) "39.90000009167092543"
+   2) "39.90000009167092543"
 2) 1) "106.49999767541885376"
-2) "29.52999957900659211"
+   2) "29.52999957900659211"
+127.0.0.1:6379>
 ```
 
-#### GEODIST
+#### 4.1.3 geodist
 
 两人之间的距离！
 
@@ -1303,86 +1304,92 @@ Redis 的 Geo 在Redis3.2 版本就推出了！ 这个功能可以推算地理�
 - ft 表示单位为英尺。
 
 ```shell
-127.0.0.1:6379> GEODIST china:city beijing shanghai km # 查看上海到北京的直线距离
+127.0.0.1:6379> geodist china:city beijing shanghai km  # 查看上海到北京的直线距离
 "1067.3788"
-127.0.0.1:6379> GEODIST china:city beijing chongqi km # 查看重庆到北京的直线距离
+127.0.0.1:6379> geodist china:city beijing chongqing km # 查看重庆到北京的直线距离
 "1464.0708"
+127.0.0.1:6379>
 ```
 
-#### georadius 以给定的经纬度为中心， 找出某一半径内的元素
+#### 4.1.4 georadius 
 
-我附近的人？ （获得所有附近的人的地址，定位！）通过半径来查询！
+**以给定的经纬度为中心， 找出某一半径内的元素。**
+
+我附近的人？（获得所有附近的人的地址，定位！）通过半径来查询！
 
 获得指定数量的人，200
 
-所有数据应该都录入：china:city ，才会让结果更加请求！
+所有数据应该都录入：china:city，才会让结果更加请求！
 
 ```shell
-127.0.0.1:6379> GEORADIUS china:city 110 30 1000 km # 以110，30 这个经纬度为中心，寻
-找方圆1000km内的城市
+127.0.0.1:6379> georadius china:city 110 30 1000 km # 以110，30 这个经纬度为中心，寻找方圆1000km内的城市 北京上海就没有在里面
 1) "chongqi"
 2) "xian"
 3) "shengzhen"
 4) "hangzhou"
-127.0.0.1:6379> GEORADIUS china:city 110 30 500 km
-1) "chongqi"
+127.0.0.1:6379> georadius china:city 110 30 500 km # 以110，30 这个经纬度为中心，寻找方圆500km内的城市
+1) "chongqing"
 2) "xian"
-127.0.0.1:6379> GEORADIUS china:city 110 30 500 km withdist # 显示到中间距离的位置
-1) 1) "chongqi"
-2) "341.9374"
+127.0.0.1:6379> georadius china:city 110 30 500 km withdist # 显示到中间距离的位置
+1) 1) "chongqing"
+   2) "341.9374"
 2) 1) "xian"
-2) "483.8340"
-127.0.0.1:6379> GEORADIUS china:city 110 30 500 km withcoord # 显示他人的定位信息
-1) 1) "chongqi"
-2) 1) "106.49999767541885376"
-2) "29.52999957900659211"
+   2) "483.8340"
+127.0.0.1:6379> georadius china:city 110 30 500 km withcoord # 显示他人的定位信息
+1) 1) "chongqing"
+   2) 1) "106.49999767541885376"
+      2) "29.52999957900659211"
 2) 1) "xian"
-2) 1) "108.96000176668167114"
-2) "34.25999964418929977"
-127.0.0.1:6379> GEORADIUS china:city 110 30 500 km withdist withcoord count 1 #
-筛选出指定的结果！
-1) 1) "chongqi"
-2) "341.9374"
-3) 1) "106.49999767541885376"
-2) "29.52999957900659211"
-127.0.0.1:6379> GEORADIUS china:city 110 30 500 km withdist withcoord count 2
-1) 1) "chongqi"
-2) "341.9374"
-3) 1) "106.49999767541885376"
-2) "29.52999957900659211"
+   2) 1) "108.96000176668167114"
+      2) "34.25999964418929977"
+127.0.0.1:6379> georadius china:city 110 30 500 km withdist withcoord count 1 # 筛选出指定的结果！
+1) 1) "chongqing"
+   2) "341.9374"
+   3) 1) "106.49999767541885376"
+      2) "29.52999957900659211"
+127.0.0.1:6379> georadius china:city 110 30 500 km withdist withcoord count 2
+1) 1) "chongqing"
+   2) "341.9374"
+   3) 1) "106.49999767541885376"
+      2) "29.52999957900659211"
 2) 1) "xian"
-2) "483.8340"
-3) 1) "108.96000176668167114"
-2) "34.25999964418929977"
+   2) "483.8340"
+   3) 1) "108.96000176668167114"
+      2) "34.25999964418929977"
+127.0.0.1:6379>
 ```
 
-#### GEORADIUSBYMEMBER
+#### 4.1.5 georadiusbymember
 
 ```shell
 # 找出位于指定元素周围的其他元素！
-127.0.0.1:6379> GEORADIUSBYMEMBER china:city beijing 1000 km
+127.0.0.1:6379> georadiusbymember china:city beijing 1000 km # 以北京为中心，寻找方圆1000km内的城市
 1) "beijing"
 2) "xian"
-127.0.0.1:6379> GEORADIUSBYMEMBER china:city shanghai 400 km
+127.0.0.1:6379> georadiusbymember china:city shanghai 400 km # 以上海为中心，寻找方圆400km内的城市
 1) "hangzhou"
 2) "shanghai"
 ```
 
-#### GEOHASH 命令 - 返回一个或多个位置元素的 Geohash 表示
+#### 4.1.6 geohash
+
+**命令 - 返回一个或多个位置元素的 Geohash 表示。**
 
 该命令将返回11个字符的Geohash字符串!
 
 ```shell
 # 将二维的经纬度转换为一维的字符串，如果两个字符串越接近，那么则距离越近！
-127.0.0.1:6379> geohash china:city beijing chongqi
+127.0.0.1:6379> geohash china:city beijing chongqing
 1) "wx4fbxxfke0"
 2) "wm5xzrybty0"
 ```
 
-#### GEO 底层的实现原理其实就是 Zset！我们可以使用Zset命令来操作geo！
+#### 4.1.7 geo底层
+
+**GEO 底层的实现原理其实就是 Zset！我们可以使用Zset命令来操作geo！**
 
 ```bash
-127.0.0.1:6379> ZRANGE china:city 0 -1 # 查看地图中全部的元素
+127.0.0.1:6379> zrange china:city 0 -1 # 查看地图中全部的元素
 1) "chongqi"
 2) "xian"
 3) "shengzhen"
@@ -1401,21 +1408,29 @@ Redis 的 Geo 在Redis3.2 版本就推出了！ 这个功能可以推算地理�
 
 ### 4.2、Hyperloglog
 
-#### 什么是基数？
+#### 4.2.1 什么是基数？
 
 A {1,3,5,7,8,7}
 
 B{1，3,5,7,8}
 
-基数（不重复的元素） = 5，可以接受误差！
+基数（不重复的元素） = 5个，可以接受误差！
 
-#### 简介
+#### 4.2.2 简介
 
-Redis 2.8.9 版本就更新了 Hyperloglog 数据结构！
+HyperLogLog 是一种概率数据结构，用于估计集合中不同元素的数量（也称为基数）。
 
-Redis Hyperloglog 基数统计的算法！
+它是用来解决大规模数据集去重计数问题的一种高效、空间占用小的算法。
 
-优点：占用的内存是固定，2^64 不同的元素的技术，只需要废 12KB内存！如果要从内存角度来比较的话 Hyperloglog 首选！
+Redis 从版本 2.8.9 开始支持 HyperLogLog 数据结构。
+
+**优点：**
+
+1. 低内存消耗：使用固定大小的内存来存储估计值，即使输入数据集非常大。
+2. 近似计数：HyperLogLog 提供的是一个估算值，而不是精确值，但它在标准误差范围内通常非常准确。
+3. 合并操作：多个 HyperLogLog 结构可以被合并成一个，这使得它们非常适合分布式环境中的计数任务。
+
+占用的内存是固定，2^64 不同的元素的基数，只需要废 12KB内存！如果要从内存角度来比较的话 Hyperloglog 首选！
 
 **网页的 UV （一个人访问一个网站多次，但是还是算作一个人！）**
 
@@ -1425,20 +1440,20 @@ Redis Hyperloglog 基数统计的算法！
 
 0.81% 错误率！ 统计UV任务，可以忽略不计的！
 
-#### 测试使用
+#### 4.2.3 测试使用
 
 ```shell
-127.0.0.1:6379> PFadd mykey a b c d e f g h i j # 创建第一组元素 mykey
+127.0.0.1:6379> pfadd mykey a b c d e f g h i j # 创建第一组元素 mykey
 (integer) 1
-127.0.0.1:6379> PFCOUNT mykey # 统计 mykey 元素的基数数量
+127.0.0.1:6379> pfcount mykey # 统计 mykey 元素的基数数量
 (integer) 10
-127.0.0.1:6379> PFadd mykey2 i j z x c v b n m # 创建第二组元素 mykey2
+127.0.0.1:6379> pfadd mykey2 i j z x c v b n m  # 创建第二组元素 mykey2
 (integer) 1
-127.0.0.1:6379> PFCOUNT mykey2
+127.0.0.1:6379> pfcount mykey2
 (integer) 9
-127.0.0.1:6379> PFMERGE mykey3 mykey mykey2 # 合并两组 mykey mykey2 => mykey3 并集
+127.0.0.1:6379> pfmerge mykey3 mykey mykey2     # 合并两组 mykey mykey2 => mykey3 并集
 OK
-127.0.0.1:6379> PFCOUNT mykey3 # 看并集的数量！
+127.0.0.1:6379> pfcount mykey3                  # 看并集的数量！
 (integer) 15
 ```
 
@@ -1448,11 +1463,22 @@ OK
 
 ### 4.3、Bitmap
 
-为什么其他教程都不喜欢讲这些？这些在生活中或者开发中，都有十分多的应用场景，学习了，就是就是多一个思路！
+#### 4.3.1 什么是bitmap
 
-技多不压身！
+Bitmap，也称为位图（Bit Map）或位数组（Bit Array），是一种数据结构，它使用一个二进制位（bit）来表示特定元素的存在与否。在位图中，每一位对应一个元素或者一组元素的状态，通常用0和1来表示元素的两种可能状态。
 
-#### 位存储
+为什么其他教程都不喜欢讲这些？这些在生活中或者开发中，都有十分多的应用场景，学习了，就是就是多一个思路！技多不压身！
+
+位图的主要优点是节省存储空间，特别是当需要表示大量数据时，比如判断一个整数是否在一个非常大的集合中。例如，如果有一个包含40亿个不重复的32位整数的集合，使用普通的数组存储每个整数将需要大约16GB的空间（40亿 * 4字节）。而如果使用位图，只需要512MB的空间（40亿 / 8字节/字），因为每位只需要1个比特来表示。
+
+**位图的应用场景包括**：
+
+- 快速查找：通过计算索引值可以立即定位到对应的比特位。
+- 去重：对于大量的元素，可以快速检测某个元素是否已经存在于集合中。
+- 排序：位图可以用来加速排序过程，特别是在进行分桶排序等算法时。
+- 数据压缩：位图可以对大量数据进行压缩，减少存储需求。
+
+#### 4.3.2 位存储
 
 统计用户信息，活跃，不活跃！ 登录 、 未登录！ 打卡，365打卡！ 两个状态的，都可以使用Bitmaps！
 
@@ -1460,15 +1486,34 @@ Bitmap 位图，数据结构！ 都是操作二进制位来进行记录，就只
 
 365 天 = 365 bit 1字节 = 8bit 46 个字节左右
 
-#### 测试
+#### 4.3.3 测试
 
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155635804-2129082216.png)
+![在这里插入图片描述](D:\2021\Redis\redis-study\img\24.png)
 
 使用bitmap 来记录 周一到周日的打卡！
 
-周一：1 周二：0 周三：0 周四：1 …
-
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155635926-1400215838.png)
+周一：1  周二：0  周三：0  周四：1 …
+```shell
+127.0.0.1:6379> flushdb
+OK
+127.0.0.1:6379> keys *
+(empty array)
+127.0.0.1:6379> setbit sign 0 1
+(integer) 0
+127.0.0.1:6379> setbit sign 1 0
+(integer) 0
+127.0.0.1:6379> setbit sign 2 0
+(integer) 0
+127.0.0.1:6379> setbit sign 3 1
+(integer) 0
+127.0.0.1:6379> setbit sign 4 1
+(integer) 0
+127.0.0.1:6379> setbit sign 5 0
+(integer) 0
+127.0.0.1:6379> setbit sign 6 0
+(integer) 0
+127.0.0.1:6379>
+```
 
 查看某一天是否有打卡！
 
@@ -2636,4 +2681,4 @@ Redis缓存的使用，极大的提升了应用程序的性能和效率，特别
 
 
 
-## 14 P17 /3.6 ...
+## 14 P21 /5事务 ...

@@ -1853,7 +1853,7 @@ SpringBoot 操作数据都是使用 ——SpringData，以下是 Spring 官网�
 
 #### 7.1.2 lettuce
 
-在 SpringBoot 2.X 之后，原来的 Jedis 被替换为了 lettuce
+在 SpringBoot 2.x 之后，原来的 Jedis 被替换为了 lettuce
 
 可点击pom中spring-boot-starter-data-redis查看到 lettuce-core。
 
@@ -1919,7 +1919,7 @@ LettuceConnectionFactory类，没有问题。
 
 新建一个 SpringBoot 项目，勾选上以下
 
-![](D:\2023\Java\SpringBoot\springboot-study\img\17.png)
+![](D:\2021\Java\SpringBoot\springboot-study\img\17.png)
 
 #### 14.3.2 引入依赖
 
@@ -1940,7 +1940,7 @@ LettuceConnectionFactory类，没有问题。
 spring:
   data:
     redis:
-      host: 127.0.0.1  #官方推荐localhost
+      host: 127.0.0.1  # 官方推荐localhost
       port: 6379
 ```
 
@@ -2048,10 +2048,10 @@ DefaultSerializer requires a Serializable payload but received an object of type
 C:\Program Files\Redis redis-cli.exe #管理员身份运行  
 keys *  # 查看  
 flushdb # 清除当前数据库  
-![](D:\2023\Java\SpringBoot\springboot-study\img\18.png)
+![](D:\2021\Java\SpringBoot\springboot-study\img\18.png)
 解决这个问题就需要修改默认的序列化规则。  
 实体类实现 Serializable 或 使用 JSON 序列化。
-![](D:\2023\Java\SpringBoot\springboot-study\img\19.png)
+![](D:\2021\Java\SpringBoot\springboot-study\img\19.png)
 
 #### 14.4.5 使用自定义配置类
 
@@ -2660,17 +2660,17 @@ public final class RedisUtil {
 ```
 
 发现工具类可正常使用。
-![](D:\2023\Java\SpringBoot\springboot-study\img\20.png)
+![](D:\2021\Java\SpringBoot\springboot-study\img\20.png)
 
 所有的redis操作，其实对于java开发人员来说，十分的简单，更重要是要去理解redis的思想和每一种数据结构的用处和作用场景！
 
-## 8、Redis.conf详解
+## 8、Redis.conf 详解
 
 启动的时候，就通过配置文件来启动！
 
 工作中，一些小小的配置，可以让你脱颖而出！
 
-**行家有没有，出手就知道**
+xconfig 中 **vim redis.conf**
 
 ### 单位
 
@@ -3423,4 +3423,4 @@ Redis缓存的使用，极大的提升了应用程序的性能和效率，特别
 
 
 
-## 14 P26 /7 ...
+## 14 P27 /8 ...

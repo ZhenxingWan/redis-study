@@ -1,0 +1,8 @@
+# SpringBoot所有的配置类，都有一个自动配置类 RedisAutoConfiguration
+# 自动配置类都会绑定一个properties 配置文件  RedisProperties
+# Redis配置 配置 Redis
+spring:
+  data:
+    redis:
+      host: 127.0.0.1  #官方推荐localhost
+      port: 6379

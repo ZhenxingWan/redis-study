@@ -3330,105 +3330,164 @@ root@wzx:/usr/local/bin#
 
 ### 11.3、一主二从
 
-默认情况下，每台Redis服务器都是主节点； 我们一般情况下只用配置从机就好了！
+当前，默认情况下，**每台Redis服务器都是主节点**； 我们一般情况下**只用配置从机**就好了！
 
-认老大！ 一主 （79）二从（80，81）
+认老大！**主机** （79）；**从机**（80，81）
 
 ```shell
-127.0.0.1:6380> SLAVEOF 127.0.0.1 6379 # SLAVEOF host 6379 找谁当自己的老大！
+# 在从机 6380 中认主机（老大）
+127.0.0.1:6380> slaveof 127.0.0.1 6379 # slaveof host 6379 找谁当自己的老大！ 第二台也一样。
 OK
 127.0.0.1:6380> info replication
-# Replication
-role:slave # 当前角色是从机
-master_host:127.0.0.1 # 可以的看到主机的信息
-master_port:6379
-master_link_status:up
-master_last_io_seconds_ago:3
+role:slave             # 当前角色是从机
+master_host:127.0.0.1  # 可以的看到主机的ip
+master_port:6379       # 可以的看到主机的端口号
+master_link_status:down
+master_last_io_seconds_ago:-1
 master_sync_in_progress:0
-slave_repl_offset:14
+slave_read_repl_offset:0
+slave_repl_offset:0
+master_link_down_since_seconds:-1
 slave_priority:100
 slave_read_only:1
+replica_announced:1
 connected_slaves:0
-master_replid:a81be8dd257636b2d3e7a9f595e69d73ff03774e
+master_failover_state:no-failover
+master_replid:85d81d3b9fc82cdbc90719f0f25f8d249a876d43
 master_replid2:0000000000000000000000000000000000000000
-master_repl_offset:14
+master_repl_offset:0
+second_repl_offset:-1
+repl_backlog_active:0
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:0
+repl_backlog_histlen:0
+127.0.0.1:6380> 
+
+# 在主机 6379 中查看！
+127.0.0.1:6379> info replication
+role:master
+connected_slaves:1 # 多了从机的配置
+slave0:ip=127.0.0.1,port=6380,state=online,offset=142,lag=1 # 多了从机的配置
+master_failover_state:no-failover
+master_replid:3df3ab4cf83f3ef762508de05cdb07bff36205bd
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:142
 second_repl_offset:-1
 repl_backlog_active:1
 repl_backlog_size:1048576
-repl_backlog_first_byte_offset:1
-repl_backlog_histlen:14
-# 在主机中查看！
+repl_backlog_first_byte_offset:3
+repl_backlog_histlen:140
+127.0.0.1:6379> 
+
+# 如果两个都配置完了，就是有两个从机
 127.0.0.1:6379> info replication
 # Replication
 role:master
-connected_slaves:1 # 多了从机的配置
-slave0:ip=127.0.0.1,port=6380,state=online,offset=42,lag=1 # 多了从机的配置
-master_replid:a81be8dd257636b2d3e7a9f595e69d73ff03774e
+connected_slaves:2 # 两个从机
+slave0:ip=127.0.0.1,port=6380,state=online,offset=394,lag=1
+slave1:ip=127.0.0.1,port=6381,state=online,offset=394,lag=1
+master_failover_state:no-failover
+master_replid:3df3ab4cf83f3ef762508de05cdb07bff36205bd
 master_replid2:0000000000000000000000000000000000000000
-master_repl_offset:42
+master_repl_offset:394
 second_repl_offset:-1
 repl_backlog_active:1
 repl_backlog_size:1048576
-repl_backlog_first_byte_offset:1
-repl_backlog_histlen:42
+repl_backlog_first_byte_offset:3
+repl_backlog_histlen:392
+127.0.0.1:6379> 
 ```
-
-如果两个都配置完了，就是有两个从机
-
-![image-20221024145835495](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739084-1388513511.png)
 
 真实的从主配置应该在配置文件中配置，这样的话是永久的，我们这里使用的是命令，暂时的！
 
+```shell
+# 在配置文件中配置方法
+replicaof <masterip> <masterport>
+# If the master is password protected (using the "requirepass" configuration
+# directive below) it is possible to tell the replica to authenticate before
+# starting the replication synchronization process, otherwise the master will
+# refuse the replica request.
+#
+masterauth <master-password>
+#
+# However this is not enough if you are using Redis ACLs (for Redis version
+# 6 or greater), and the default user is not capable of running the PSYNC
+# command and/or other commands needed for replication. In this case it's
+# better to configure a special user to use with replication, and specify the
+# masteruser configuration as such:
+#
+masteruser <username>
+↑↑↑ 配置以上三个（主机ip 端口号），（主机密码），（主机名称）。
+```
+
 ### 11.4、细节
 
-主机可以写，从机不能写只能读！主机中的所有信息和数据，都会自动被从机保存！
+主机可以写，**从机不能写只能读**！主机中的所有信息和数据，都会自动被从机保存！
 
 主机写：
 
 ```shell
-# 主机可以读写
+# 主机可以 读写
 127.0.0.1:6379> keys *
 (empty array)
 127.0.0.1:6379> set k1 v1
 OK
 127.0.0.1:6379> get k1
 "v1"
-# 从机只能读不能写
+
+# 从机只能读 不能写
 127.0.0.1:6380> get k1
 "v1"
-127.0.0.1:6380> set k1 v2
+127.0.0.1:6380> set k2 v2
 (error) READONLY You can't write against a read only replica.
+127.0.0.1:6380> 
 ```
 
 测试：主机断开连接，从机依旧连接到主机的，但是没有写操作，这个时候，主机如果回来了，从机依旧可以直接获取到主机写的信息！
 
-如果是使用命令行，来配置的主从，这个时候如果重启了，就会变回主机！只要变为从机，立马就会从主机中获取值！
+如果是使用命令行，来配置的主从，这个时候如果从机重启了，就会变回主机！只要**变为从机，立马就会从主机中获取值**！
 
 ### 11.5、复制原理
 
-Slave 启动成功连接到 master 后会发送一个sync同步命令
+slave 启动成功连接到 master 后会发送一个sync同步命令。
 
 Master 接到命令，启动后台的存盘进程，同时收集所有接收到的用于修改数据集命令，在后台进程执行完毕之后，**master将传送整个数据文件到slave，并完成一次完全同步。**
 
 **全量复制：**slave服务在接收到数据库文件数据后，将其存盘并加载到内存中。
 
-**增量复制：**Master 继续将新的所有收集到的修改命令依次传给slave，完成同步
+**增量复制：**Master 继续将新的所有收集到的修改命令依次传给slave，完成同步。
 
 但是只要是重新连接master，一次完全同步（全量复制）将被自动执行！ 我们的数据一定可以在从机中看到！
 
-层层链路
+**Redis的主从复制机制**中，数据同步方式包括全量复制（Full Resynchronization）和增量复制（Partial Resynchronization），这两种复制方式在不同场景下用于保持主从节点间的数据一致性。
 
-上一个M链接下一个 S！
+1. **全量复制**：
+   - 当一个新的从节点首次连接到主节点时，或者从节点与主节点之间的复制连接断开时间过长，导致复制偏移量、运行ID等信息不再匹配时，需要进行全量复制。
+   - 在全量复制过程中，主节点会创建一个RDB快照（即Redis数据库的二进制形式），并将这个包含所有键值对的快照文件发送给从节点。
+   - 从节点接收并载入这个RDB文件，从而快速建立起与主节点一致的数据状态。
+   - 此过程可能会消耗较多的网络带宽和CPU资源，尤其是当数据量非常大时。
+2. **增量复制**（也称为部分复制）：
+   - 在全量复制之后或者从节点与主节点始终保持连接的情况下，从节点通常采用增量复制的方式来获取后续的所有写操作命令。
+   - 主节点维护了一个复制积压缓冲区（Replication Backlog），其中存储了一段时间内执行过的写命令序列。
+   - 当从节点断线重连后，如果条件满足（如复制偏移量在复制积压缓冲区的有效范围内，并且主节点的运行ID未发生变化），从节点可以请求部分复制，主节点只需将从节点断线期间错过的新命令发送给从节点执行即可。
+   - 增量复制极大地提高了主从节点之间数据同步的效率和实时性，减少了不必要的数据传输。
 
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739214-1658089539.png)
+层层链路，上一个M链接下一个 依旧是S！
 
-这时候也可以完成我们的主从复制！
+测试：79为主机（不变），80为从机（不变），81（把81改为连接80）。
+![在这里插入图片描述](D:\2021\Redis\redis-study\img\40.png)
 
-如果没有老大了，这个时候能不能选择一个老大出来呢？ 手动！
+81连接80，80连接79；此时80是79的从机，81是80的从机。  
+这时候，其实80还是从机，80和81还是没有写权限、只有读权限。  
+这时候也可以完成我们的主从复制。
 
-谋朝篡位
+假设6379断开了，shutdown了。这样就没有老大了，这个时候能不能选择一个老大出来呢？ 手动！谋朝篡位。
 
-如果主机断开了连接，我们可以使用 SLAVEOF no one 让自己变成主机！其他的节点就可以手动连接到最新的这个主节点（手动）！如果这个时候老大修复了，那就重新连接！
+如果主机断开了连接，我们可以使用 slaveof no one 让自己变成主机！其他的节点就可以手动连接到最新的这个主节点（手动）！
+
+127.0.0.1:6380>`slaveof no one ` # 让6380自己变成主机
+
+如果这个时候 6379 老大修复了，那就重新连接！
 
 ## 12、哨兵模式
 
@@ -3441,8 +3500,7 @@ Master 接到命令，启动后台的存盘进程，同时收集所有接收到�
 谋朝篡位的自动版，能够后台监控主机是否故障，如果故障了根据投票数自动将从库转换为主库。
 
 哨兵模式是一种特殊的模式，首先Redis提供了哨兵的命令，哨兵是一个独立的进程，作为进程，它会独立运行。其原理是哨兵通过发送命令，等待Redis服务器响应，从而监控运行的多个Redis实例。
-
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155639266-1314687767.png)
+![在这里插入图片描述](D:\2021\Redis\redis-study\img\41.png)
 
 这里的哨兵有两个作用
 
@@ -3450,54 +3508,59 @@ Master 接到命令，启动后台的存盘进程，同时收集所有接收到�
 - 当哨兵监测到master宕机，会自动将slave切换成master，然后通过发布订阅模式通知其他的从服务器，修改配置文件，让它们切换主机。
 
 然而一个哨兵进程对Redis服务器进行监控，可能会出现问题，为此，我们可以使用多个哨兵进行监控。各个哨兵之间还会进行监控，这样就形成了多哨兵模式。
+![在这里插入图片描述](D:\2021\Redis\redis-study\img\42.png)
 
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739068-1859377925.png)
+假设主服务器宕机，哨兵1先检测到这个结果，系统并不会马上进行failover过程，仅仅是哨兵1主观的认为主服务器不可用，这个现象称为**主观下线**。当后面的哨兵也检测到主服务器不可用，并且数量达到一定值时，那么哨兵之间就会进行一次投票，投票的结果由一个哨兵发起，进行failover[故障转移]操作。切换成功后，就会通过发布订阅模式，让各个哨兵把自己监控的从服务器实现切换主机，这个过程称为**客观下线**。
 
-假设主服务器宕机，哨兵1先检测到这个结果，系统并不会马上进行failover过程，仅仅是哨兵1主观的认为主服务器不可用，这个现象称为**主观下线**。当后面的哨兵也检测到主服务器不可用，并且数量达到一定值时，那么哨兵之间就会进行一次投票，投票的结果由一个哨兵发起，进行failover[故障转移]操作。切换成功后，就会通过发布订阅模式，让各个哨兵把自己监控的从服务器实现切换主机，这个过程称为**客观下线**
-
-### 12.2、测试！
+### 12.2、哨兵测试！
 
 我们目前的状态是 一主二从！
 
 1、创建一个sentinel.conf
 
 ```shell
-[root@VM-12-14-centos bin]# cd dconfig/
-[root@VM-12-14-centos dconfig]# ll
-total 336
--rw-r--r-- 1 root root 83405 Oct 24 14:46 redis79.conf
--rw-r--r-- 1 root root 83405 Oct 24 14:47 redis80.conf
--rw-r--r-- 1 root root 83405 Oct 24 14:49 redis81.conf
--rw-r--r-- 1 root root 83393 Oct 24 13:58 redis.conf
-[root@VM-12-14-centos dconfig]# vim sentinel.conf
+root@wzx:/usr/local/bin# cd xconfig
+root@wzx:/usr/local/bin/xconfig# ls
+redis79.conf  redis80.conf  redis81.conf  redis.conf
+root@wzx:/usr/local/bin/xconfig# 
+root@wzx:/usr/local/bin/xconfig# vi sentinel.conf
+配置哨兵文件↓↓↓
 ```
 
 2、配置哨兵配置文件 sentinel.conf
 
-```properties
+```shell
 # sentinel monitor 被监控的名称 host port 1
 sentinel monitor myredis 127.0.0.1 6379 1
-```
+
+用于监控一个名为“myredis”的主服务器实例。这句话的具体含义和作用如下：
+myredis: 这是为被监控的Redis主服务器定义的一个名称或别名。Sentinel使用这个名称来管理对应的主从集群。
+127.0.0.1: 指定Redis主服务器的IP地址，这里表示本地回环地址，即 sentinel 在同一台机器上监控Redis主节点。
+6379: 指定Redis主服务器的服务端口。
+1: 表示当有至少1个Sentinel节点认为主服务器失效时，该主服务器就被认为下线。也就是说，只要有一个Sentinel同意主服务器不可达，就会触发故障转移流程（自动将从节点提升为主节点，并通知其他从节点和客户端新的主节点位置）。
+这条命令的作用是配置Sentinel去监视指定地址和端口上的Redis服务，确保其高可用性。当主服务器出现故障时，Sentinel系统能够自动完成故障发现、故障转移以及后续的从服务器重新配置等工作。
 
 后面的这个数字1，代表至少有一个哨兵认为主机宕机时，该主机才被判定为宕机，slave投票看让谁接替成为主机，票数最多的，就会成为主机！
+```
 
-3、启动哨兵
+3、启动哨兵服务
 
 ```shell
-[root@VM-12-14-centos bin]# redis-sentinel dconfig/sentinel.conf
-19017:X 24 Oct 2022 15:26:23.781 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
-19017:X 24 Oct 2022 15:26:23.781 # Redis version=6.0.6, bits=64, commit=00000000, modified=0, pid=19017, just started
-19017:X 24 Oct 2022 15:26:23.781 # Configuration loaded
+root@wzx:/usr/local/bin# redis-sentinel xconfig/sentinel.conf
+823604:X 05 Jan 2024 16:14:43.392 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+823604:X 05 Jan 2024 16:14:43.392 * Redis version=7.2.3, bits=64, commit=00000000, modified=0, pid=823604, just started
+823604:X 05 Jan 2024 16:14:43.392 * Configuration loaded
+823604:X 05 Jan 2024 16:14:43.392 * monotonic clock: POSIX clock_gettime
                 _._                                                  
            _.-``__ ''-._                                             
-      _.-``    `.  `_.  ''-._           Redis 6.0.6 (00000000/0) 64 bit
-  .-`` .-```.  ```\/    _.,_ ''-._                                   
+      _.-``    `.  `_.  ''-._           Redis 7.2.3 (00000000/0) 64 bit
+  .-`` .-```.  ```\/    _.,_ ''-._                                  
  (    '      ,       .-`  | `,    )     Running in sentinel mode
  |`-._`-...-` __...-.``-._|'` _.-'|     Port: 26379
- |    `-._   `._    /     _.-'    |     PID: 19017
+ |    `-._   `._    /     _.-'    |     PID: 823604
   `-._    `-._  `-./  _.-'    _.-'                                   
  |`-._`-._    `-.__.-'    _.-'_.-'|                                  
- |    `-._`-._        _.-'_.-'    |           http://redis.io        
+ |    `-._`-._        _.-'_.-'    |           https://redis.io       
   `-._    `-._`-.__.-'_.-'    _.-'                                   
  |`-._`-._    `-.__.-'    _.-'_.-'|                                  
  |    `-._`-._        _.-'_.-'    |                                  
@@ -3505,39 +3568,175 @@ sentinel monitor myredis 127.0.0.1 6379 1
       `-._    `-.__.-'    _.-'                                       
           `-._        _.-'                                           
               `-.__.-'                                               
-
-19017:X 24 Oct 2022 15:26:23.782 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
-19017:X 24 Oct 2022 15:26:23.785 # Sentinel ID is 5425a4e16ee4940e4d0db992771dba1a44cad477
-19017:X 24 Oct 2022 15:26:23.785 # +monitor master myredis 127.0.0.1 6379 quorum 1
-19017:X 24 Oct 2022 15:26:23.786 * +slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
-19017:X 24 Oct 2022 15:26:23.789 * +slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:14:43.398 * Sentinel new configuration saved on disk
+823604:X 05 Jan 2024 16:14:43.398 * Sentinel ID is 1e3e34812b6badf4da5ed51ef64a27667c48b5ff
+823604:X 05 Jan 2024 16:14:43.398 # +monitor master myredis 127.0.0.1 6379 quorum 1
+823604:X 05 Jan 2024 16:14:43.399 * +slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:14:43.403 * Sentinel new configuration saved on disk
+823604:X 05 Jan 2024 16:14:43.403 * +slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:14:43.406 * Sentinel new configuration saved on disk
 ```
 
-如果Master 节点断开了，这个时候就会从从机中随机选择一个服务器！ （这里面有一个投票算法！）
+4、如果Master 节点断开了，这个时候就会从从机中随机选择一个服务器！ （这里面有一个投票算法！）
 
-79断开：
+```shell
+# 断开6379
+127.0.0.1:6379> shutdown
+not connected> exit
+root@wzx:/usr/local/bin# 
+```
 
-![image-20221024153028987](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739195-311600528.png)
+5、查看80和81谁被选举为主机。
 
-80被选举为主机：
+```shell
+# 80
+127.0.0.1:6380> info replication
+# Replication
+role:slave
+master_host:127.0.0.1
+master_port:6381
+master_link_status:up
+master_last_io_seconds_ago:0
+master_sync_in_progress:0
+slave_read_repl_offset:52369
+slave_repl_offset:52369
+slave_priority:100
+slave_read_only:1
+replica_announced:1
+connected_slaves:0
+master_failover_state:no-failover
+master_replid:cef8ef91f4eccccc833d3049bee274c182aed23f
+master_replid2:3df3ab4cf83f3ef762508de05cdb07bff36205bd
+master_repl_offset:52369
+second_repl_offset:37255
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:17
+repl_backlog_histlen:52353
+127.0.0.1:6380> 
 
-![image-20221024153228338](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739197-90760753.png)
+# 81
+127.0.0.1:6381> info replication
+# Replication
+role:master
+connected_slaves:1
+slave0:ip=127.0.0.1,port=6380,state=online,offset=42537,lag=0
+master_failover_state:no-failover
+master_replid:cef8ef91f4eccccc833d3049bee274c182aed23f
+master_replid2:3df3ab4cf83f3ef762508de05cdb07bff36205bd
+master_repl_offset:42537
+second_repl_offset:37255
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:381
+repl_backlog_histlen:42157
+127.0.0.1:6381> 
 
-81自动切换主机：
+# 现在可以发现 81被选举为主机 role:master ↑↑↑
+# 80从机也自动连接到了 81 了。
+```
 
-![image-20221024153148045](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739153-1494996592.png)
+6、查看哨兵日志！
 
-哨兵日志！
+```shell
+root@wzx:/usr/local/bin# redis-sentinel xconfig/sentinel.conf
+823604:X 05 Jan 2024 16:14:43.392 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+823604:X 05 Jan 2024 16:14:43.392 * Redis version=7.2.3, bits=64, commit=00000000, modified=0, pid=823604, just started
+823604:X 05 Jan 2024 16:14:43.392 * Configuration loaded
+823604:X 05 Jan 2024 16:14:43.392 * monotonic clock: POSIX clock_gettime
+                _._                                                  
+           _.-``__ ''-._                                             
+      _.-``    `.  `_.  ''-._           Redis 7.2.3 (00000000/0) 64 bit
+  .-`` .-```.  ```\/    _.,_ ''-._                                  
+ (    '      ,       .-`  | `,    )     Running in sentinel mode
+ |`-._`-...-` __...-.``-._|'` _.-'|     Port: 26379
+ |    `-._   `._    /     _.-'    |     PID: 823604
+  `-._    `-._  `-./  _.-'    _.-'                                   
+ |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+ |    `-._`-._        _.-'_.-'    |           https://redis.io       
+  `-._    `-._`-.__.-'_.-'    _.-'                                   
+ |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+ |    `-._`-._        _.-'_.-'    |                                  
+  `-._    `-._`-.__.-'_.-'    _.-'                                   
+      `-._    `-.__.-'    _.-'                                       
+          `-._        _.-'                                           
+              `-.__.-'                                               
+823604:X 05 Jan 2024 16:14:43.398 * Sentinel new configuration saved on disk
+823604:X 05 Jan 2024 16:14:43.398 * Sentinel ID is 1e3e34812b6badf4da5ed51ef64a27667c48b5ff
+823604:X 05 Jan 2024 16:14:43.398 # +monitor master myredis 127.0.0.1 6379 quorum 1
+823604:X 05 Jan 2024 16:14:43.399 * +slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:14:43.403 * Sentinel new configuration saved on disk
+823604:X 05 Jan 2024 16:14:43.403 * +slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:14:43.406 * Sentinel new configuration saved on disk
+# 手动关闭6379主机后 哨兵日志就发出了以下信息 ↓↓↓↓↓
+823604:X 05 Jan 2024 16:18:05.453 # +sdown master myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.453 # +odown master myredis 127.0.0.1 6379 #quorum 1/1
+823604:X 05 Jan 2024 16:18:05.453 # +new-epoch 1
+823604:X 05 Jan 2024 16:18:05.453 # +try-failover master myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.456 * Sentinel new configuration saved on disk
+823604:X 05 Jan 2024 16:18:05.456 # +vote-for-leader 1e3e34812b6badf4da5ed51ef64a27667c48b5ff 1
+823604:X 05 Jan 2024 16:18:05.456 # +elected-leader master myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.456 # +failover-state-select-slave master myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.515 # +selected-slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.515 * +failover-state-send-slaveof-noone slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.586 * +failover-state-wait-promotion slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.709 * Sentinel new configuration saved on disk
+823604:X 05 Jan 2024 16:18:05.709 # +promoted-slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.709 # +failover-state-reconf-slaves master myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:05.778 * +slave-reconf-sent slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:06.748 * +slave-reconf-inprog slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:06.748 * +slave-reconf-done slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:06.831 # +failover-end master myredis 127.0.0.1 6379
+823604:X 05 Jan 2024 16:18:06.831 # +switch-master myredis 127.0.0.1 6379 127.0.0.1 6381                # ↓↓↓↓↓
+823604:X 05 Jan 2024 16:18:06.831 * +slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6381
+823604:X 05 Jan 2024 16:18:06.831 * +slave slave 127.0.0.1:6379 127.0.0.1 6379 @ myredis 127.0.0.1 6381
+823604:X 05 Jan 2024 16:18:06.835 * Sentinel new configuration saved on disk
+823604:X 05 Jan 2024 16:18:36.884 # +sdown slave 127.0.0.1:6379 127.0.0.1 6379 @ myredis 127.0.0.1 6381
 
-![image-20221024153345266](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155639476-996219953.png)
+# +switch-master myredis 127.0.0.1 6379 127.0.0.1 6381 是Redis Sentinel（哨兵）在执行故障转移操作后发出的通知消息。这条消息表示：↑↑↑↑↑
+myredis: 这是被监控的Redis主从集群的逻辑名称，与配置Sentinel时使用的master-name一致。
+127.0.0.1 6379: 表示原Redis主服务器的IP地址和端口，在此之前这个实例是集群中的主节点。
+127.0.0.1 6381: 新的Redis主服务器的IP地址和端口，在发生故障转移后， Sentinel已经决定将原来的从节点（端口为6381）提升为主节点。
+这条消息意味着，在Sentinel系统检测到名为“myredis”的Redis主节点（运行于127.0.0.1:6379）不可用后，它自动执行了故障转移流程，并成功地将从节点（127.0.0.1:6381）切换为主节点。同时，Sentinel会通知其他从节点开始复制新的主节点，并更新客户端连接到新的主节点以继续提供服务。
+```
 
-如果主机此时回来了，只能归并到新的主机下，当做从机，这就是哨兵模式的规则！
+7、如果主机此时回来了，（再启动6379），只能归并到新的主机下，当做从机，这就是哨兵模式的规则！
+
+```shell
+root@wzx:/usr/local/bin# redis-server xconfig/redis79.conf
+root@wzx:/usr/local/bin# redis-cli -p 6379
+127.0.0.1:6379> info replication
+# Replication
+role:slave                   # ↓↓↓↓↓
+master_host:127.0.0.1
+master_port:6381
+master_link_status:up
+master_last_io_seconds_ago:1
+master_sync_in_progress:0
+slave_read_repl_offset:116978
+slave_repl_offset:116978
+slave_priority:100
+slave_read_only:1
+replica_announced:1
+connected_slaves:0
+master_failover_state:no-failover
+master_replid:cef8ef91f4eccccc833d3049bee274c182aed23f
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:116978
+second_repl_offset:-1
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:107110
+repl_backlog_histlen:9869
+127.0.0.1:6379> 
+# 现在可以发现 81被选举为主机后 6379再启动回来就只能当81的弟弟了 role:slave ↑↑↑↑↑
+```
 
 优点：
 
-1、哨兵集群，基于主从复制模式，所有的主从配置优点，它全有
+1、哨兵集群，基于主从复制模式，所有的主从配置优点，它全有；
 
-2、 主从可以切换，故障可以转移，系统的可用性就会更好
+2、 主从可以切换，故障可以转移，系统的可用性就会更好；
 
 3、哨兵模式就是主从模式的升级，手动到自动，更加健壮！
 
@@ -3549,7 +3748,7 @@ sentinel monitor myredis 127.0.0.1 6379 1
 
 ### 12.3、哨兵模式的全部配置！
 
-```yaml
+```shell
 # Example sentinel.conf
 
 # 哨兵sentinel实例运行的端口 默认26379
@@ -3617,33 +3816,27 @@ sentinel client-reconfig-script mymaster /var/redis/reconfig.sh # 一般都是�
 
 ## 13、Redis缓存穿透和雪崩
 
-服务的高可用问题！
-
-在这里我们不会详细的区分析解决方案的底层！
+服务的高可用问题！在这里不会详细的去分析解决方案的底层！
 
 Redis缓存的使用，极大的提升了应用程序的性能和效率，特别是数据查询方面。但同时，它也带来了一些问题。其中，最要害的问题，就是数据的一致性问题，从严格意义上讲，这个问题无解。如果对数据的一致性要求很高，那么就不能使用缓存。另外的一些典型问题就是，缓存穿透、缓存雪崩和缓存击穿。目前，业界也都有比较流行的解决方案。
+![](D:\2021\Redis\redis-study\img\43.png)
 
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739355-800345165.png)
+### 13.1、缓存穿透（查不到数据）
 
-### 13.1、缓存穿透（查不到）
-
-#### 概念
+#### 13.1.1 概念
 
 缓存穿透的概念很简单，用户想要查询一个数据，发现redis内存数据库没有，也就是缓存没有命中，于是向持久层数据库查询。发现也没有，于是本次查询失败。当用户很多的时候，缓存都没有命中（秒杀！），于是都去请求了持久层数据库。这会给持久层数据库造成很大的压力，这时候就相当于出现了缓存穿透。
 
-#### 解决方案
+#### 13.1.2 解决方案
 
-布隆过滤器
+**布隆过滤器**
 
-布隆过滤器是一种数据结构，对所有可能查询的参数以hash形式存储，在控制层先进行校验，不符合则丢弃，从而避免了对底层存储系统的查询压力；
+布隆过滤器是一种数据结构，对所有可能查询的参数以hash形式存储，在控制层先进行校验，不符合则丢弃，从而避免了对底层存储系统的查询压力；![](D:\2021\Redis\redis-study\img\44.png)
 
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155639529-2100365897.png)
-
-缓存空对象
+**缓存空对象**
 
 当存储层不命中后，即使返回的空对象也将其缓存起来，同时会设置一个过期时间，之后再访问这个数据将会从缓存中获取，保护了后端数据源；
-
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739265-1336309415.png)
+![](D:\2021\Redis\redis-study\img\45.png)
 
 但是这种方法会存在两个问题：
 
@@ -3653,13 +3846,13 @@ Redis缓存的使用，极大的提升了应用程序的性能和效率，特别
 
 ### 13.2、缓存击穿（量太大，缓存过期！）
 
-#### 概述
+#### 13.2.1 概述
 
 这里需要注意和缓存击穿的区别，缓存击穿，是指一个key非常热点，在不停的扛着大并发，大并发集中对这一个点进行访问，当这个key在失效的瞬间，持续的大并发就穿破缓存，直接请求数据库，就像在一个屏障上凿开了一个洞。
 
 当某个key在过期的瞬间，有大量的请求并发访问，这类数据一般是热点数据，由于缓存过期，会同时访问数据库来查询最新数据，并且回写缓存，会导使数据库瞬间压力过大。
 
-#### 解决方案
+#### 13.2.2 解决方案
 
 **设置热点数据永不过期**
 
@@ -3668,22 +3861,20 @@ Redis缓存的使用，极大的提升了应用程序的性能和效率，特别
 **加互斥锁**
 
 分布式锁：使用分布式锁，保证对于每个key同时只有一个线程去查询后端服务，其他线程没有获得分布式锁的权限，因此只需要等待即可。这种方式将高并发的压力转移到了分布式锁，因此对分布式锁的考验很大。
-
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155739215-1836701274.png)
+![](D:\2021\Redis\redis-study\img\46.png)
 
 ### 13.3、缓存雪崩
 
-#### 概念
+#### 13.3.1 概念
 
 缓存雪崩，是指在某一个时间段，缓存集中过期失效。Redis 宕机！
 
 产生雪崩的原因之一，比如在写本文的时候，马上就要到双十二零点，很快就会迎来一波抢购，这波商品时间比较集中的放入了缓存，假设缓存一个小时。那么到了凌晨一点钟的时候，这批商品的缓存就都过期了。而对这批商品的访问查询，都落到了数据库上，对于数据库而言，就会产生周期性的压力波峰。于是所有的请求都会达到存储层，存储层的调用量会暴增，造成存储层也会挂掉的情况。
-
-![在这里插入图片描述](https://img2022.cnblogs.com/blog/2333762/202210/2333762-20221024155639263-595515580.png)
+![](D:\2021\Redis\redis-study\img\47.png)
 
 其实集中过期，倒不是非常致命，比较致命的缓存雪崩，是缓存服务器某个节点宕机或断网。因为自然形成的缓存雪崩，一定是在某个时间段集中创建缓存，这个时候，数据库也是可以顶住压力的。无非就是对数据库产生周期性的压力而已。而缓存服务节点的宕机，对数据库服务器造成的压力是不可预知的，很有可能瞬间就把数据库压垮。
 
-#### 解决方案
+#### 13.3.2 解决方案
 
 **redis高可用**
 
@@ -3697,6 +3888,4 @@ Redis缓存的使用，极大的提升了应用程序的性能和效率，特别
 
 数据加热的含义就是在正式部署之前，我先把可能的数据先预先访问一遍，这样部分可能大量访问的数据就会加载到缓存中。在即将发生大并发访问前手动触发加载缓存不同的key，设置不同的过期时间，让缓存失效的时间点尽量均匀。
 
-
-
-## 14 P32 /11.3 ...
+YYDS：https://www.bilibili.com/video/BV1S54y1R7SB

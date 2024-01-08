@@ -17,7 +17,6 @@ import java.net.UnknownHostException;
 public class RedisConfig {
     //编写我们自己的redisTemplate,这是一个比较固定的模板
     @Bean
-
     @SuppressWarnings("all")
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) throws UnknownHostException {
         // 为了开发方便，直接使用<String, Object>

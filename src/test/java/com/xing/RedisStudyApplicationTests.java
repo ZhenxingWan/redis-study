@@ -34,7 +34,7 @@ class RedisStudyApplicationTests {
     @Test
     void testRedis(){
         Jedis jedis = new Jedis("127.0.0.1", 6379);
-        jedis.select(1);//选择第1号数据库,如果不选择指定数据库、默认就是db0数据库。
+        //jedis.select();//选择第1号数据库,如果不选择指定数据库、默认就是db0数据库。
         jedis.flushDB();
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("name","xing");
@@ -45,7 +45,6 @@ class RedisStudyApplicationTests {
         //jedis.watch(result);
         try {
             multi.set("user1",result);
-            multi.set("user2",result);
             //int i = 1/0; //代码抛出异常事务，执行失败！
             multi.exec(); //执行事务
         } catch (Exception e) {
